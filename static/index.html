@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寒层年尺</title>
+<style>
+:root {
+  --ink:#17324a; --muted:#5d7385; --line:#d6e1e8; --paper:#fbfdfe;
+  --ice:#e8f4f8; --accent:#146c8a; --warn:#b23b31; --ok:#1f7a4d;
+}
+* { box-sizing: border-box; }
+body {
+  margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  color:var(--ink); background:#f2f6f8;
+}
+header {
+  background:linear-gradient(120deg,#10394c,#1f6d86); color:#fff;
+  padding:22px 32px;
+}
+header h1 { margin:0; font-size:26px; letter-spacing:3px; }
+header p { margin:6px 0 0; color:#cfe5ee; font-size:13px; }
+main { max-width:1180px; margin:20px auto; padding:0 20px; }
+.grid { display:grid; grid-template-columns:1.35fr 1fr; gap:18px; }
+.card {
+  background:var(--paper); border:1px solid var(--line); border-radius:12px;
+  padding:18px; box-shadow:0 2px 10px rgba(20,60,80,.05);
+}
+.card h2 { font-size:16px; margin:0 0 12px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th,td { padding:7px 8px; border-bottom:1px solid #e7eef2; text-align:left; vertical-align:top; }
+th { color:var(--muted); font-weight:600; }
+.badge { padding:1px 7px; border-radius:999px; font-size:11px; }
+.kind-layer { background:#e7f0e3; color:#37612c; }
+.kind-ash { background:#f5e8dc; color:#8a4a1f; }
+.kind-isotope { background:#e5e9f6; color:#33457d; }
+.kind-hard { background:#fae5e2; color:#96322a; }
+.kind-gap { background:#e4eff3; color:#1c5d70; }
+button {
+  border:1px solid #9db9c5; background:#fff; color:var(--ink);
+  border-radius:8px; padding:6px 12px; cursor:pointer; font-size:13px;
+}
+button.primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+button.danger { color:var(--warn); border-color:#d8a19c; }
+button:disabled { opacity:.45; cursor:not-allowed; }
+.row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+input,select {
+  border:1px solid #aec2cc; border-radius:7px; padding:5px 8px; font-size:13px;
+  background:#fff;
+}
+.muted { color:var(--muted); font-size:12px; }
+pre {
+  background:#0f2733; color:#d8eef5; border-radius:9px; padding:12px;
+  font-size:12px; overflow:auto; max-height:360px;
+}
+.conflict { color:var(--warn); }
+.ok { color:var(--ok); }
+.pill { display:inline-block; margin:2px; padding:2px 8px; border-radius:999px; background:var(--ice); font-size:12px; }
+.section-gap { margin-top:18px; }
+.small { font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>寒层年尺</h1>
+  <p>冰芯深度 → 年代：单调不减约束、固定种子重放、不可变运行记录、缺芯不正填零年</p>
+</header>
+<main>
+  <div class="grid">
+    <section class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2>工作区证据</h2>
+        <div class="row">
+          <button class="primary" onclick="solve()">求解并生成运行记录</button>
+          <button onclick="swapSoft()">交换前两个软锦标</button>
+          <button onclick="loadWorkspace()">刷新</button>
+        </div>
+      </div>
+      <div id="workspace-hint" class="muted"></div>
+      <div class="section-gap"><table id="evidence-table"></table></div>
+      <div class="section-gap">
+        <h2>求解参数与软锦标分布</h2>
+        <div class="row small">
+          <label>种子 <input id="set-seed" type="number" style="width:110px"></label>
+          <label>抽样数 <input id="set-draws" type="number" min="1" style="width:90px"></label>
+          <button onclick="saveSettings()">保存参数</button>
+        </div>
+        <div class="row small section-gap">
+          <label>软锦标 <select id="dist-id"></select></label>
+          <label>均值 <input id="dist-mean" type="number" style="width:90px"></label>
+          <label>σ <input id="dist-sigma" type="number" step="0.5" style="width:70px"></label>
+          <button onclick="saveDistribution()">调整分布</button>
+        </div>
+        <div id="dist-result" class="muted section-gap"></div>
+      </div>
+      <div class="section-gap">
+        <h2>缺芯边界调整</h2>
+        <div class="row small">
+          <label>缺芯 <select id="gap-id"></select></label>
+          <label>开始 <input id="gap-start" type="number" step="0.1" style="width:90px"></label>
+          <label>结束 <input id="gap-end" type="number" step="0.1" style="width:90px"></label>
+          <label>均值 <input id="gap-mean" type="number" step="0.5" style="width:80px"></label>
+          <label>σ <input id="gap-sigma" type="number" step="0.2" style="width:70px"></label>
+          <button onclick="adjustGap()">调整（仅失效依赖分位数）</button>
+        </div>
+        <div id="gap-result" class="muted section-gap"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>最近运行</h2>
+      <div id="run-status" class="muted">尚未求解</div>
+      <div id="run-summary" class="section-gap"></div>
+      <h2 class="section-gap">运行记录</h2>
+      <div class="row"><button onclick="loadRuns()">列出</button><button onclick="exportAll()">导出整库</button><button onclick="document.getElementById('bundle-box').style.display='block'">导入复核</button></div>
+      <div id="runs" class="section-gap small"></div>
+      <div id="bundle-box" style="display:none" class="section-gap">
+        <h2>导入 bundle（清空后 replace / 合并 merge）</h2>
+        <div class="row">
+          <select id="import-mode"><option value="replace">replace（先清空）</option><option value="merge">merge</option></select>
+          <input id="bundle-file" type="file" accept="application/json">
+          <button onclick="importBundle()">导入</button>
+          <button class="danger" onclick="resetDb()">清空并重置 fixture</button>
+        </div>
+        <div id="import-result" class="muted"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card section-gap">
+    <div class="row" style="justify-content:space-between">
+      <h2>运行对比：定位差异深度段</h2>
+      <div class="row small">
+        <label>左 <select id="compare-left"></select></label>
+        <label>右 <select id="compare-right"></select></label>
+        <label>阈值(年) <input id="compare-threshold" value="1" type="number" style="width:80px"></label>
+        <button onclick="compareRuns()">对比</button>
+      </div>
+    </div>
+    <div id="compare-result"></div>
+  </section>
+
+  <section class="card section-gap">
+    <h2>运行记录 JSON</h2>
+    <pre id="run-json">点击“求解并生成运行记录”。</pre>
+  </section>
+</main>
+<script>
+let workspace = null;
+let latestRun = null;
+
+async function api(path, options) {
+  const response = await fetch(path, options || {});
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!response.ok) throw new Error(data.error || response.statusText);
+  return data;
+}
+function fmt(value, digits) {
+  if (value === null || value === undefined || Number.isNaN(value)) return "—";
+  return Number(value).toFixed(digits === undefined ? 2 : digits);
+}
+const kindLabel = { layer:"季节层", ash:"火山灰", isotope:"同位素", hard:"硬区间", gap:"缺芯" };
+
+async function loadWorkspace() {
+  workspace = await api("/api/workspace");
+  const table = document.getElementById("evidence-table");
+  const rows = ["<tr><th>ID</th><th>芯段</th><th>类型</th><th>深度</th><th>观测/区间</th><th>启用</th></tr>"];
+  for (const ev of workspace.evidence) {
+    let obs = "";
+    if (ev.mean !== null && ev.mean !== undefined) obs += "均值 " + fmt(ev.mean) + (ev.sigma ? " ± " + fmt(ev.sigma) : "") + "<br>";
+    if (ev.age_lo !== null && ev.age_lo !== undefined) obs += "硬区间 [" + fmt(ev.age_lo) + ", " + fmt(ev.age_hi) + "] 年<br>";
+    if (ev.gap_end !== null && ev.gap_end !== undefined) obs += "缺芯至 " + fmt(ev.gap_end) + " m；缺时 " + fmt(ev.gap_mean) + "±" + fmt(ev.gap_sigma) + " 年<br>";
+    rows.push(`<tr>
+      <td>${ev.id}<div class="muted">${ev.label}</div></td>
+      <td>${ev.segment}</td>
+      <td><span class="badge kind-${ev.kind}">${kindLabel[ev.kind]}</span></td>
+      <td>${fmt(ev.depth, 2)} m</td>
+      <td>${obs}</td>
+      <td><button onclick="toggle('${ev.id}', ${!ev.enabled})">${ev.enabled ? "暂时排除" : "重新启用"}</button></td>
+    </tr>`);
+  }
+  table.innerHTML = rows.join("");
+  document.getElementById("workspace-hint").textContent =
+    "种子 " + workspace.settings.seed + "，每次 " + workspace.settings.draws + " 条样本；深度严格有序，年龄单调不减。";
+  renderGapSelect();
+  renderDistributionSelect();
+  document.getElementById("set-seed").value = workspace.settings.seed;
+  document.getElementById("set-draws").value = workspace.settings.draws;
+  await loadRuns();
+}
+
+function renderGapSelect() {
+  const select = document.getElementById("gap-id");
+  select.innerHTML = "";
+  for (const ev of workspace.evidence.filter(e => e.kind === "gap")) {
+    select.innerHTML += `<option value="${ev.id}">${ev.id} (${fmt(ev.depth)}–${fmt(ev.gap_end)} m)</option>`;
+  }
+  fillGapFields();
+}
+function fillGapFields() {
+  const ev = workspace.evidence.find(e => e.id === document.getElementById("gap-id").value);
+  if (!ev) return;
+  document.getElementById("gap-start").value = ev.depth;
+  document.getElementById("gap-end").value = ev.gap_end;
+  document.getElementById("gap-mean").value = ev.gap_mean;
+  document.getElementById("gap-sigma").value = ev.gap_sigma;
+}
+async function adjustGap() {
+  const id = document.getElementById("gap-id").value;
+  const body = {
+    start: Number(document.getElementById("gap-start").value),
+    end: Number(document.getElementById("gap-end").value),
+    gap_mean: Number(document.getElementById("gap-mean").value),
+    gap_sigma: Number(document.getElementById("gap-sigma").value),
+  };
+  try {
+    const result = await api(`/api/evidence/${id}/gap`, {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+    });
+    document.getElementById("gap-result").innerHTML =
+      "已调整缺芯 <b>" + id + "</b>；仅这些依赖节点分位数失效：" +
+      (result.invalidated_nodes.length ? result.invalidated_nodes.map(k => `<span class="pill">${k}</span>`).join("") : "<b>无（所有分位数仍可复用）</b>");
+    await loadWorkspace();
+  } catch (error) {
+    document.getElementById("gap-result").innerHTML = `<span class="conflict">${error.message}</span>`;
+  }
+}
+
+async function toggle(id, enabled) {
+  await api(`/api/evidence/${id}/enabled`, {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({enabled})
+  });
+  await loadWorkspace();
+}
+async function swapSoft() {
+  await api("/api/soft/swap", { method:"POST" });
+  await loadWorkspace();
+}
+
+async function solve() {
+  document.getElementById("run-status").textContent = "求解中…";
+  try {
+    latestRun = await api("/api/solve", { method:"POST" });
+    renderRun(latestRun);
+    await loadRuns();
+  } catch (error) {
+    document.getElementById("run-status").innerHTML = `<span class="conflict">求解失败：${error.message}</span>`;
+  }
+}
+
+function renderRun(run) {
+  document.getElementById("run-json").textContent = JSON.stringify(run, null, 2);
+  if (!run.feasible) {
+    const mus = (run.minimum_conflict_set || []).join(", ");
+    document.getElementById("run-status").innerHTML =
+      `<span class="conflict">拒绝发布：硬约束冲突。最小冲突集 = { ${mus} }</span>`;
+    document.getElementById("run-summary").innerHTML =
+      "<div class='conflict'>" + run.conflicts.map(c => c.reason + " @ " + fmt(c.at_depth) + " m，节点 " + c.node_key).join("<br>") + "</div>";
+    return;
+  }
+  document.getElementById("run-status").innerHTML =
+    `<span class="ok">可行模型已发布</span> · run_id <code>${run.run_id.slice(0,16)}…</code> · 接受 ${run.draws}/${run.attempts} 次尝试`;
+  const rows = ["<tr><th>节点</th><th>深度</th><th>中位数(年)</th><th>区间</th><th>局部累积率/时长</th><th>软约束残差</th></tr>"];
+  const edgeByTo = new Map(run.edges.map(e => [e.depth_hi, e]));
+  for (const node of run.nodes) {
+    const edge = edgeByTo.get(node.depth);
+    let rate = "—";
+    if (edge) rate = edge.is_gap ? "缺芯时长 " + fmt(edge.median_duration) + " 年" : fmt(edge.median_rate) + " 年/m";
+    const z = node.soft_residual_sigma;
+    const ztext = z === null || z === undefined ? "" : `<span class="${Math.abs(z)>2.5?'conflict':''}">${fmt(z,2)}σ</span>`;
+    rows.push(`<tr><td>${node.key}<div class="muted">${node.label||""}</div></td><td>${fmt(node.depth)}</td>
+      <td>${fmt(node.median)}</td><td>${node.quantiles.map(q=>fmt(q)).join(" – ")}</td><td>${rate}</td><td>${ztext}</td></tr>`);
+  }
+  document.getElementById("run-summary").innerHTML = "<table>" + rows.join("") + "</table>";
+}
+
+async function loadRuns() {
+  const data = await api("/api/runs");
+  const holder = document.getElementById("runs");
+  holder.innerHTML = "";
+  for (const run of data.runs) {
+    const div = document.createElement("div");
+    div.className = "row";
+    const state = run.feasible ? '<span class="ok">可行</span>' : '<span class="conflict">冲突拒绝</span>';
+    div.innerHTML = `${state} <code>${run.run_id.slice(0,12)}…</code>
+      <span class="muted">${run.created_at || ""}</span>
+      <button onclick="showRun('${run.run_id}')">查看</button>
+      <a href="/api/runs/${run.run_id}/export"><button>导出</button></a>`;
+    holder.appendChild(div);
+  }
+  for (const id of ["compare-left", "compare-right"]) {
+    const select = document.getElementById(id);
+    const current = select.value;
+    select.innerHTML = data.runs.map(r => `<option value="${r.run_id}">${r.run_id.slice(0,12)}… ${r.feasible ? "可行":"冲突"}</option>`).join("");
+    if (current) select.value = current;
+  }
+}
+async function showRun(id) {
+  latestRun = await api(`/api/runs/${id}`);
+  renderRun(latestRun);
+}
+async function compareRuns() {
+  const body = {
+    left: document.getElementById("compare-left").value,
+    right: document.getElementById("compare-right").value,
+    threshold: Number(document.getElementById("compare-threshold").value),
+  };
+  const data = await api("/api/runs/compare", {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+  });
+  if (!data.diff.segments.length) {
+    document.getElementById("compare-result").innerHTML = "<div class='muted'>没有超过阈值的深度段差异。</div>";
+    return;
+  }
+  const rows = ["<table><tr><th>深度(m)</th><th>节点</th><th>左中位数</th><th>右中位数</th><th>差值(年)</th></tr>"];
+  for (const seg of data.diff.segments) {
+    rows.push(`<tr><td>${fmt(seg.depth)}</td><td>${seg.node_key}</td><td>${fmt(seg.left_median)}</td>
+      <td>${fmt(seg.right_median)}</td><td>${fmt(seg.delta_years)}</td></tr>`);
+  }
+  rows.push("</table>");
+  document.getElementById("compare-result").innerHTML = rows.join("");
+}
+async function exportAll() {
+  const data = await api("/api/export");
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "hanleng-nianchi-bundle.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+async function importBundle() {
+  const file = document.getElementById("bundle-file").files[0];
+  if (!file) return document.getElementById("import-result").textContent = "请选择 bundle JSON 文件";
+  const bundle = JSON.parse(await file.text());
+  const data = await api("/api/import", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ mode: document.getElementById("import-mode").value, bundle })
+  });
+  document.getElementById("import-result").innerHTML =
+    `导入完成：新增 ${data.runs_added} 条运行，已有 ${data.runs_kept} 条保持不变。`;
+  await loadWorkspace();
+}
+async function resetDb() {
+  await api("/api/reset", { method:"POST" });
+  await loadWorkspace();
+}
+document.getElementById("gap-id").addEventListener("change", fillGapFields);
+document.getElementById("dist-id").addEventListener("change", fillDistributionFields);
+function renderDistributionSelect() {
+  const select = document.getElementById("dist-id");
+  const items = workspace.evidence.filter(e => (e.kind === "ash" || e.kind === "isotope"));
+  select.innerHTML = items.map(e => `<option value="${e.id}">${e.id} (μ=${fmt(e.mean)}, σ=${fmt(e.sigma)})</option>`).join("");
+  fillDistributionFields();
+}
+function fillDistributionFields() {
+  const ev = workspace.evidence.find(e => e.id === document.getElementById("dist-id").value);
+  if (!ev) return;
+  document.getElementById("dist-mean").value = ev.mean;
+  document.getElementById("dist-sigma").value = ev.sigma;
+}
+async function saveDistribution() {
+  const id = document.getElementById("dist-id").value;
+  const body = { mean: Number(document.getElementById("dist-mean").value), sigma: Number(document.getElementById("dist-sigma").value) };
+  try {
+    await api(`/api/evidence/${id}/distribution`, {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+    });
+    document.getElementById("dist-result").textContent = "已更新 " + id + " 的分布；分位数缓存已整体失效。";
+    await loadWorkspace();
+  } catch (error) {
+    document.getElementById("dist-result").innerHTML = `<span class="conflict">${error.message}</span>`;
+  }
+}
+async function saveSettings() {
+  const settings = workspace.settings;
+  settings.seed = Number(document.getElementById("set-seed").value);
+  settings.draws = Number(document.getElementById("set-draws").value);
+  await api("/api/settings", {
+    method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(settings)
+  });
+  await loadWorkspace();
+}
+document.getElementById("dist-id") && null;
+loadWorkspace();
+</script>
+</body>
+</html>

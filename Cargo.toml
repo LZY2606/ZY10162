@@ -1,0 +1,20 @@
+[package]
+name = "hanleng-nianchi"
+version = "0.1.0"
+edition = "2021"
+description = "寒层年尺: ice-core depth-to-age monotonic timescale builder"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.37", features = ["bundled"] }
+sha2 = "0.11"
+
+[dev-dependencies]
+serde_json = "1"
+
+[[bin]]
+name = "hanleng-nianchi"
+path = "src/main.rs"
