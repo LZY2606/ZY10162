@@ -1,0 +1,56 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #0f1419;
+  color: #d7dee7;
+}
+header { padding: 14px 20px 6px; }
+h1 { margin: 0; font-size: 24px; color: #9fd4ff; }
+.sub { color: #8b98a5; font-size: 13px; margin-top: 4px; }
+.toolbar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 20px; background: #161d26; border-bottom: 1px solid #243040;
+}
+.spacer { flex: 1; }
+button {
+  background: #20303f; color: #d7dee7; border: 1px solid #33506a;
+  border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+button:hover { background: #2a4257; }
+button.primary { background: #1d4e6e; border-color: #3d7ea6; }
+button.danger { background: #4a2430; border-color: #7a3c4c; }
+input, select {
+  background: #0f1822; color: #d7dee7; border: 1px solid #33506a;
+  border-radius: 5px; padding: 5px 8px;
+}
+label { font-size: 13px; color: #9fb0c0; display: flex; align-items: center; gap: 6px; }
+main { display: flex; gap: 16px; padding: 14px 20px; align-items: flex-start; }
+.col { flex: 1; min-width: 0; }
+h2 { font-size: 16px; color: #9fd4ff; margin: 14px 0 8px; }
+table.data { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.data th, table.data td {
+  border: 1px solid #243040; padding: 4px 6px; text-align: left;
+  max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+table.data th { background: #18222e; color: #9fb0c0; }
+tr.feasible td.status { color: #7fe0a8; }
+tr.rejected td.status { color: #f08a9a; }
+.banner {
+  margin: 8px 20px; padding: 10px 14px; border-radius: 8px;
+  background: #1c2f3c; border: 1px solid #3d7ea6;
+}
+.banner.error { background: #3a1f27; border-color: #7a3c4c; }
+.banner.warn { background: #3a3220; border-color: #9c7c3c; }
+.hidden { display: none; }
+.gap-row { background: #2a2230; }
+.small { font-size: 12px; color: #9fb0c0; }
+pre.json {
+  background: #0b1118; border: 1px solid #243040; border-radius: 6px;
+  padding: 8px; max-height: 260px; overflow: auto; font-size: 11px;
+}
+#chart { display: block; margin: 0 20px 30px; background: #0b1118; border: 1px solid #243040; border-radius: 8px; }
+.chip { display:inline-block; padding:1px 7px; border-radius:10px; background:#223; border:1px solid #345; margin-right:4px; font-size:11px; }
+.chip.soft { border-color:#4b6e43; }
+.chip.gap { border-color:#7a5c9c; }
+.diff-controls { display:flex; gap:8px; margin-bottom:8px; }

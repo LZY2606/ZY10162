@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>寒层年尺</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<header>
+  <h1>寒层年尺</h1>
+  <div class="sub">冰芯深度 → 年代单调年尺 · 固定种子可重放 · 局部分层多方案</div>
+</header>
+
+<section class="toolbar">
+  <button id="btn-solve" class="primary">求解（生成运行记录）</button>
+  <label>种子 <input id="seed" type="number" value="20260921" /></label>
+  <label>抽样数 <input id="draws" type="number" value="400" min="1" max="100000" /></label>
+  <button id="btn-rerun">对所选基线增量重放</button>
+  <select id="base-run"></select>
+  <span class="spacer"></span>
+  <button id="btn-reset">重置 fixture</button>
+  <button id="btn-clear">清空数据库</button>
+  <button id="btn-export">导出 Bundle</button>
+  <button id="btn-import">导入并复核</button>
+  <input id="import-file" type="file" accept="application/json" hidden />
+</section>
+
+<div id="banner" class="banner hidden"></div>
+
+<main>
+  <div class="col">
+    <h2>芯段</h2>
+    <table id="segments-table" class="data">
+      <thead><tr>
+        <th>ID</th><th>顶深</th><th>底深</th><th>状态</th><th>缺芯最小年数</th><th>备注</th><th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>锦标（约束）</h2>
+    <table id="markers-table" class="data">
+      <thead><tr>
+        <th>ID</th><th>深度</th><th>类型</th><th>硬/软</th><th>[lo,hi]</th>
+        <th>均值</th><th>sd</th><th>局部方案</th><th>交换组</th><th>权重</th>
+        <th>排除</th><th>备注</th><th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>交换组</h2>
+    <div id="exchanges"></div>
+  </div>
+
+  <div class="col">
+    <h2>运行记录（不可变）</h2>
+    <table id="runs-table" class="data">
+      <thead><tr>
+        <th>#</th><th>类型</th><th>状态</th><th>说明</th><th>父</th><th></th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+
+    <div id="run-detail"></div>
+
+    <h2>候选模型差异定位</h2>
+    <div class="diff-controls">
+      <select id="diff-a"></select>
+      <select id="diff-b"></select>
+      <button id="btn-diff">对比</button>
+    </div>
+    <div id="diff-detail"></div>
+  </div>
+</main>
+
+<canvas id="chart" width="900" height="320"></canvas>
+
+<script src="/app.js"></script>
+</body>
+</html>
